@@ -1,0 +1,5 @@
+train: PlantYOLO/images/train
+val:   PlantYOLO/images/val
+
+nc: 5  # number of classes
+names: ['class_0', 'class_1', 'class_2', 'class_3', 'class_4']
