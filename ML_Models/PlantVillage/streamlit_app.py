@@ -115,26 +115,31 @@ def download_model_from_drive():
         st.info("📥 Downloading model from Google Drive...")
         try:
             gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-            st.success("✅ Model downloaded successfully!")
+            st.success("Model downloaded successfully!")
         except Exception as e:
-            st.error(f"❌ Error downloading model: {e}")
+            st.error(f"Error downloading model: {e}")
             st.error("Please check your internet connection and Google Drive link.")
             st.stop()
     return True
 
 def load_class_names():
     """Load class names from classes.txt file"""
-    if not os.path.exists(CLASSES_FILE):
-        st.error(f"❌ Classes file not found: {CLASSES_FILE}")
+    # Get the absolute path to the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Join the script directory with the filename to get the full path
+    classes_file_path = os.path.join(script_dir, "classes.txt")
+
+    if not os.path.exists(classes_file_path):
+        st.error(f"❌ Classes file not found at: {classes_file_path}")
         st.error("Please ensure classes.txt is in the same directory as this app.")
         st.stop()
-    
-    with open(CLASSES_FILE, 'r') as f:
+
+    with open(classes_file_path, 'r') as f:
         class_names = [line.strip() for line in f.readlines()]
-    
+
     if len(class_names) != NUM_CLASSES:
-        st.warning(f"⚠️ Expected {NUM_CLASSES} classes, found {len(class_names)}")
-    
+        st.warning(f"Expected {NUM_CLASSES} classes, found {len(class_names)}")
+
     return class_names
 
 # --- MODEL LOADING ---
@@ -239,7 +244,7 @@ col1, col2 = st.columns([2, 1])
 
 with col1:
     # File uploader section
-    st.markdown("### 📤 Upload Plant Leaf Image")
+    st.markdown("### Upload Plant Leaf Image")
     uploaded_file = st.file_uploader(
         "Choose an image of a plant leaf...",
         type=["jpg", "jpeg", "png"],
@@ -251,12 +256,12 @@ with col1:
         st.image(uploaded_file, caption="📸 Uploaded Image", use_column_width=True)
         
         # Prediction button
-        if st.button("🔍 Analyze Disease", type="primary", use_container_width=True):
-            with st.spinner("🤖 Analyzing plant health..."):
+        if st.button("Analyze Disease", type="primary", use_container_width=True):
+            with st.spinner("Analyzing plant health..."):
                 prediction, confidence = predict_disease(uploaded_file, model, class_names)
             
             # Display results
-            st.markdown("### 🎯 Analysis Results")
+            st.markdown("### Analysis Results")
             
             # Create result card
             st.markdown(f"""
@@ -269,15 +274,15 @@ with col1:
             
             # Health status
             if "healthy" in prediction.lower():
-                st.success("✅ **Plant is Healthy!**")
+                st.success("**Plant is Healthy!**")
                 st.balloons()
             else:
-                st.warning("⚠️ **Disease Detected!**")
-                st.info("💡 Consider consulting agricultural experts for treatment recommendations.")
+                st.warning("⚠**Disease Detected!**")
+                st.info(" Consider consulting agricultural experts for treatment recommendations.")
 
 with col2:
     # Information sidebar
-    st.markdown("### ℹ️ How to Use")
+    st.markdown("### How to Use")
     st.info("""
     1. **Upload** a clear image of a plant leaf
     2. **Click** 'Analyze Disease' 
@@ -285,7 +290,7 @@ with col2:
     4. **Check** confidence level
     """)
     
-    st.markdown("### 📋 Tips for Best Results")
+    st.markdown("### Tips for Best Results")
     st.success("""
     • Use well-lit, clear images
     • Ensure leaf fills most of the frame
@@ -293,7 +298,7 @@ with col2:
     • Multiple angles can help accuracy
     """)
     
-    st.markdown("### 📊 Model Information")
+    st.markdown("### Model Information")
     st.info(f"""
     • **Classes:** {len(class_names)} diseases
     • **Architecture:** EfficientNet-B0
