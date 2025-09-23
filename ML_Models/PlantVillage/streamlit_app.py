@@ -99,288 +99,288 @@
 
 
 
-# import streamlit as st
-# import torch
-# from torchvision import models, transforms
-# from PIL import Image
-# import os
-# import gdown
-
-# # --- CONFIGURATION ---
-# MODEL_URL = "https://drive.google.com/uc?id=1YvUoajFYHDPHckBmE0Xl1znHi89ZP2pU"
-# MODEL_PATH = "plant_disease_model.pth"
-# CLASSES_FILE = "classes.txt"
-# NUM_CLASSES = 39
-
-# # --- HELPER FUNCTIONS ---
-
-# def download_model_from_drive():
-#     """Download model from Google Drive if not present"""
-#     if not os.path.exists(MODEL_PATH):
-#         st.info("📥 Downloading model from Google Drive...")
-#         try:
-#             gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
-#             st.success("Model downloaded successfully!")
-#         except Exception as e:
-#             st.error(f"Error downloading model: {e}")
-#             st.error("Please check your internet connection and Google Drive link.")
-#             st.stop()
-#     return True
-
-# def load_class_names():
-#     """Load class names from classes.txt file"""
-#     # Get the absolute path to the directory where this script is located
-#     script_dir = os.path.dirname(os.path.abspath(__file__))
-#     # Join the script directory with the filename to get the full path
-#     classes_file_path = os.path.join(script_dir, "classes.txt")
-
-#     if not os.path.exists(classes_file_path):
-#         st.error(f"❌ Classes file not found at: {classes_file_path}")
-#         st.error("Please ensure classes.txt is in the same directory as this app.")
-#         st.stop()
-
-#     with open(classes_file_path, 'r') as f:
-#         class_names = [line.strip() for line in f.readlines()]
-
-#     if len(class_names) != NUM_CLASSES:
-#         st.warning(f"Expected {NUM_CLASSES} classes, found {len(class_names)}")
-
-#     return class_names
-
-# # --- MODEL LOADING ---
-# @st.cache_resource
-# def load_model():
-#     """Loads the pre-trained EfficientNet model with custom classifier"""
-#     # Download model first
-#     download_model_from_drive()
-    
-#     # Load model architecture
-#     model = models.efficientnet_b0(weights=None)
-    
-#     # Replace the final layer
-#     num_ftrs = model.classifier[1].in_features
-#     model.classifier[1] = torch.nn.Linear(num_ftrs, NUM_CLASSES)
-    
-#     # Load the trained weights
-#     model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
-    
-#     # Set to evaluation mode
-#     model.eval()
-#     return model
-
-# # --- PREDICTION FUNCTION ---
-# def predict_disease(image_data, model, class_names):
-#     """Predict plant disease from uploaded image"""
-#     # Define the same transformations as used in training
-#     transform = transforms.Compose([
-#         transforms.Resize(256),
-#         transforms.CenterCrop(224),
-#         transforms.ToTensor(),
-#         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-#     ])
-    
-#     # Preprocess the image
-#     image = Image.open(image_data).convert("RGB")
-#     image_tensor = transform(image).unsqueeze(0)  # Add batch dimension
-    
-#     # Make prediction
-#     with torch.no_grad():
-#         outputs = model(image_tensor)
-#         probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
-#         _, predicted_idx = torch.max(outputs, 1)
-    
-#     prediction = class_names[predicted_idx.item()]
-#     confidence = probabilities[predicted_idx.item()].item()
-    
-#     return prediction, confidence
-
-# # --- STREAMLIT APP LAYOUT ---
-
-# # Configure the page
-# st.set_page_config(
-#     page_title="🌿 Plant Disease Detector - SIH",
-#     page_icon="🌱",
-#     layout="wide",
-#     initial_sidebar_state="expanded"
-# )
-
-# # Custom CSS for better styling
-# st.markdown("""
-#     <style>
-#     .main-header {
-#         font-size: 2.5rem;
-#         font-weight: bold;
-#         color: #2E7D32;
-#         text-align: center;
-#         margin-bottom: 1rem;
-#     }
-#     .upload-section {
-#         border: 2px dashed #4CAF50;
-#         border-radius: 10px;
-#         padding: 2rem;
-#         text-align: center;
-#         background-color: #f5f5f5;
-#     }
-#     .result-card {
-#         background-color: #E8F5E8;
-#         border-left: 5px solid #4CAF50;
-#         padding: 1rem;
-#         border-radius: 5px;
-#         margin: 1rem 0;
-#     }
-#     </style>
-# """, unsafe_allow_html=True)
-
-# # Header
-# st.markdown('<div class="main-header">🌿 Plant Disease Detector</div>', unsafe_allow_html=True)
-# st.markdown('<div style="text-align: center; color: #666; margin-bottom: 2rem;">SIH Hackathon Project - PlantVillage Disease Classification</div>', unsafe_allow_html=True)
-
-# # Load model and class names
-# try:
-#     model = load_model()
-#     class_names = load_class_names()
-#     st.success("✅ Model loaded successfully!")
-# except Exception as e:
-#     st.error(f"❌ Error loading model: {e}")
-#     st.stop()
-
-# # Create two columns for layout
-# col1, col2 = st.columns([2, 1])
-
-# with col1:
-#     # File uploader section
-#     st.markdown("### Upload Plant Leaf Image")
-#     uploaded_file = st.file_uploader(
-#         "Choose an image of a plant leaf...",
-#         type=["jpg", "jpeg", "png"],
-#         help="Supported formats: JPG, JPEG, PNG"
-#     )
-    
-#     if uploaded_file is not None:
-#         # Display uploaded image
-#         st.image(uploaded_file, caption="📸 Uploaded Image", use_column_width=True)
-        
-#         # Prediction button
-#         if st.button("Analyze Disease", type="primary", use_container_width=True):
-#             with st.spinner("Analyzing plant health..."):
-#                 prediction, confidence = predict_disease(uploaded_file, model, class_names)
-            
-#             # Display results
-#             st.markdown("### Analysis Results")
-            
-#             # Create result card
-#             st.markdown(f"""
-#             <div class="result-card">
-#                 <h4>🔬 Disease Detection</h4>
-#                 <p><strong>Disease:</strong> {prediction.replace('___', ' - ')}</p>
-#                 <p><strong>Confidence:</strong> {confidence*100:.1f}%</p>
-#             </div>
-#             """, unsafe_allow_html=True)
-            
-#             # Health status
-#             if "healthy" in prediction.lower():
-#                 st.success("**Plant is Healthy!**")
-#                 st.balloons()
-#             else:
-#                 st.warning("⚠**Disease Detected!**")
-#                 st.info(" Consider consulting agricultural experts for treatment recommendations.")
-
-# with col2:
-#     # Information sidebar
-#     st.markdown("### How to Use")
-#     st.info("""
-#     1. **Upload** a clear image of a plant leaf
-#     2. **Click** 'Analyze Disease' 
-#     3. **View** the prediction results
-#     4. **Check** confidence level
-#     """)
-    
-#     st.markdown("### Tips for Best Results")
-#     st.success("""
-#     • Use well-lit, clear images
-#     • Ensure leaf fills most of the frame
-#     • Avoid blurry or dark photos
-#     • Multiple angles can help accuracy
-#     """)
-    
-#     st.markdown("### Model Information")
-#     st.info(f"""
-#     • **Classes:** {len(class_names)} diseases
-#     • **Architecture:** EfficientNet-B0
-#     • **Dataset:** PlantVillage
-#     """)
-
-# # Footer
-# st.markdown("---")
-# st.markdown("""
-# <div style="text-align: center; color: #666;">
-#     <p>🌱 <strong>SIH Hackathon Project</strong></p>
-#     <p>Plant Disease Detection using Deep Learning</p>
-# </div>
-# """, unsafe_allow_html=True)
-
-
-
 import streamlit as st
 import torch
-from torchvision import transforms
+from torchvision import models, transforms
 from PIL import Image
-import cv2
-import numpy as np
-import requests
+import os
+import gdown
 
-# ---------------- CONFIG ----------------
+# --- CONFIGURATION ---
+MODEL_URL = "https://drive.google.com/uc?id=1YvUoajFYHDPHckBmE0Xl1znHi89ZP2pU"
 MODEL_PATH = "plant_disease_model.pth"
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+CLASSES_FILE = "classes.txt"
+NUM_CLASSES = 39
 
-# Replace with your IP Webcam URL (make sure it's the /shot.jpg endpoint)
-# Example: http://<phone-ip>:8080/shot.jpg
-IP_WEBCAM_URL = "http://192.168.137.62:8080/shot.jpg"  
+# --- HELPER FUNCTIONS ---
 
-# ---------------- LOAD MODEL ----------------
-model = torch.load(MODEL_PATH, map_location=DEVICE)
-model.eval()
+def download_model_from_drive():
+    """Download model from Google Drive if not present"""
+    if not os.path.exists(MODEL_PATH):
+        st.info("📥 Downloading model from Google Drive...")
+        try:
+            gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+            st.success("Model downloaded successfully!")
+        except Exception as e:
+            st.error(f"Error downloading model: {e}")
+            st.error("Please check your internet connection and Google Drive link.")
+            st.stop()
+    return True
 
-# ---------------- TRANSFORMS ----------------
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-])
+def load_class_names():
+    """Load class names from classes.txt file"""
+    # Get the absolute path to the directory where this script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Join the script directory with the filename to get the full path
+    classes_file_path = os.path.join(script_dir, "classes.txt")
 
-# ---------------- STREAMLIT APP ----------------
-st.title("Plant Disease Detection - IP Webcam")
+    if not os.path.exists(classes_file_path):
+        st.error(f"❌ Classes file not found at: {classes_file_path}")
+        st.error("Please ensure classes.txt is in the same directory as this app.")
+        st.stop()
 
-st.markdown(
-    f"""
-    This app connects to your phone's **IP Webcam** feed.  
-    Make sure you have the IP Webcam app running and replace the URL correctly.  
-    Current URL: `{IP_WEBCAM_URL}`
-    """
+    with open(classes_file_path, 'r') as f:
+        class_names = [line.strip() for line in f.readlines()]
+
+    if len(class_names) != NUM_CLASSES:
+        st.warning(f"Expected {NUM_CLASSES} classes, found {len(class_names)}")
+
+    return class_names
+
+# --- MODEL LOADING ---
+@st.cache_resource
+def load_model():
+    """Loads the pre-trained EfficientNet model with custom classifier"""
+    # Download model first
+    download_model_from_drive()
+    
+    # Load model architecture
+    model = models.efficientnet_b0(weights=None)
+    
+    # Replace the final layer
+    num_ftrs = model.classifier[1].in_features
+    model.classifier[1] = torch.nn.Linear(num_ftrs, NUM_CLASSES)
+    
+    # Load the trained weights
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
+    
+    # Set to evaluation mode
+    model.eval()
+    return model
+
+# --- PREDICTION FUNCTION ---
+def predict_disease(image_data, model, class_names):
+    """Predict plant disease from uploaded image"""
+    # Define the same transformations as used in training
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    
+    # Preprocess the image
+    image = Image.open(image_data).convert("RGB")
+    image_tensor = transform(image).unsqueeze(0)  # Add batch dimension
+    
+    # Make prediction
+    with torch.no_grad():
+        outputs = model(image_tensor)
+        probabilities = torch.nn.functional.softmax(outputs[0], dim=0)
+        _, predicted_idx = torch.max(outputs, 1)
+    
+    prediction = class_names[predicted_idx.item()]
+    confidence = probabilities[predicted_idx.item()].item()
+    
+    return prediction, confidence
+
+# --- STREAMLIT APP LAYOUT ---
+
+# Configure the page
+st.set_page_config(
+    page_title="🌿 Plant Disease Detector - SIH",
+    page_icon="🌱",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-if st.button("Capture from Phone Camera"):
-    try:
-        # Grab image from IP Webcam
-        img_resp = requests.get(IP_WEBCAM_URL, timeout=5)
-        img_array = np.array(bytearray(img_resp.content), dtype=np.uint8)
-        frame = cv2.imdecode(img_array, -1)
+# Custom CSS for better styling
+st.markdown("""
+    <style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #2E7D32;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    .upload-section {
+        border: 2px dashed #4CAF50;
+        border-radius: 10px;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f5f5f5;
+    }
+    .result-card {
+        background-color: #E8F5E8;
+        border-left: 5px solid #4CAF50;
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-        # Convert OpenCV BGR → RGB
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+# Header
+st.markdown('<div class="main-header">🌿 Plant Disease Detector</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; color: #666; margin-bottom: 2rem;">SIH Hackathon Project - PlantVillage Disease Classification</div>', unsafe_allow_html=True)
 
-        # Show captured frame
-        st.image(frame_rgb, caption="Captured from Phone Camera", use_container_width=True)
+# Load model and class names
+try:
+    model = load_model()
+    class_names = load_class_names()
+    st.success("✅ Model loaded successfully!")
+except Exception as e:
+    st.error(f"❌ Error loading model: {e}")
+    st.stop()
 
-        # Convert to PIL and preprocess
-        pil_img = Image.fromarray(frame_rgb)
-        input_tensor = transform(pil_img).unsqueeze(0).to(DEVICE)
+# Create two columns for layout
+col1, col2 = st.columns([2, 1])
 
-        # Run prediction
-        with torch.no_grad():
-            outputs = model(input_tensor)
-            _, predicted = torch.max(outputs, 1)
+with col1:
+    # File uploader section
+    st.markdown("### Upload Plant Leaf Image")
+    uploaded_file = st.file_uploader(
+        "Choose an image of a plant leaf...",
+        type=["jpg", "jpeg", "png"],
+        help="Supported formats: JPG, JPEG, PNG"
+    )
+    
+    if uploaded_file is not None:
+        # Display uploaded image
+        st.image(uploaded_file, caption="📸 Uploaded Image", use_column_width=True)
+        
+        # Prediction button
+        if st.button("Analyze Disease", type="primary", use_container_width=True):
+            with st.spinner("Analyzing plant health..."):
+                prediction, confidence = predict_disease(uploaded_file, model, class_names)
+            
+            # Display results
+            st.markdown("### Analysis Results")
+            
+            # Create result card
+            st.markdown(f"""
+            <div class="result-card">
+                <h4>🔬 Disease Detection</h4>
+                <p><strong>Disease:</strong> {prediction.replace('___', ' - ')}</p>
+                <p><strong>Confidence:</strong> {confidence*100:.1f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Health status
+            if "healthy" in prediction.lower():
+                st.success("**Plant is Healthy!**")
+                st.balloons()
+            else:
+                st.warning("⚠**Disease Detected!**")
+                st.info(" Consider consulting agricultural experts for treatment recommendations.")
 
-        st.success(f"Prediction: Class {predicted.item()}")
+with col2:
+    # Information sidebar
+    st.markdown("### How to Use")
+    st.info("""
+    1. **Upload** a clear image of a plant leaf
+    2. **Click** 'Analyze Disease' 
+    3. **View** the prediction results
+    4. **Check** confidence level
+    """)
+    
+    st.markdown("### Tips for Best Results")
+    st.success("""
+    • Use well-lit, clear images
+    • Ensure leaf fills most of the frame
+    • Avoid blurry or dark photos
+    • Multiple angles can help accuracy
+    """)
+    
+    st.markdown("### Model Information")
+    st.info(f"""
+    • **Classes:** {len(class_names)} diseases
+    • **Architecture:** EfficientNet-B0
+    • **Dataset:** PlantVillage
+    """)
 
-    except Exception as e:
-        st.error(f"Error capturing from IP Webcam: {e}")
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666;">
+    <p>🌱 <strong>SIH Hackathon Project</strong></p>
+    <p>Plant Disease Detection using Deep Learning</p>
+</div>
+""", unsafe_allow_html=True)
+
+
+
+# import streamlit as st
+# import torch
+# from torchvision import transforms
+# from PIL import Image
+# import cv2
+# import numpy as np
+# import requests
+
+# # ---------------- CONFIG ----------------
+# MODEL_PATH = "plant_disease_model.pth"
+# DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# # Replace with your IP Webcam URL (make sure it's the /shot.jpg endpoint)
+# # Example: http://<phone-ip>:8080/shot.jpg
+# IP_WEBCAM_URL = "http://192.168.137.62:8080/shot.jpg"  
+
+# # ---------------- LOAD MODEL ----------------
+# model = torch.load(MODEL_PATH, map_location=DEVICE)
+# model.eval()
+
+# # ---------------- TRANSFORMS ----------------
+# transform = transforms.Compose([
+#     transforms.Resize((224, 224)),
+#     transforms.ToTensor(),
+# ])
+
+# # ---------------- STREAMLIT APP ----------------
+# st.title("Plant Disease Detection - IP Webcam")
+
+# st.markdown(
+#     f"""
+#     This app connects to your phone's **IP Webcam** feed.  
+#     Make sure you have the IP Webcam app running and replace the URL correctly.  
+#     Current URL: `{IP_WEBCAM_URL}`
+#     """
+# )
+
+# if st.button("Capture from Phone Camera"):
+#     try:
+#         # Grab image from IP Webcam
+#         img_resp = requests.get(IP_WEBCAM_URL, timeout=5)
+#         img_array = np.array(bytearray(img_resp.content), dtype=np.uint8)
+#         frame = cv2.imdecode(img_array, -1)
+
+#         # Convert OpenCV BGR → RGB
+#         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+#         # Show captured frame
+#         st.image(frame_rgb, caption="Captured from Phone Camera", use_container_width=True)
+
+#         # Convert to PIL and preprocess
+#         pil_img = Image.fromarray(frame_rgb)
+#         input_tensor = transform(pil_img).unsqueeze(0).to(DEVICE)
+
+#         # Run prediction
+#         with torch.no_grad():
+#             outputs = model(input_tensor)
+#             _, predicted = torch.max(outputs, 1)
+
+#         st.success(f"Prediction: Class {predicted.item()}")
+
+#     except Exception as e:
+#         st.error(f"Error capturing from IP Webcam: {e}")
